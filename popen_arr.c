@@ -8,7 +8,7 @@
 
 // Implemented by Vitaly _Vi Shukela in 2013, License=MIT
 
-static int popen2_impl(FILE** in, FILE** out,  const char* program, const char* argv[], const char* envp[], int lookup_path) {
+static int popen2_impl(FILE** in, FILE** out,  const char* program, const char* const argv[], const char* const envp[], int lookup_path) {
     
 	int child_stdout = -1;
 	int child_stdin = -1;
@@ -85,17 +85,17 @@ static int popen2_impl(FILE** in, FILE** out,  const char* program, const char* 
 }
 
 
-int popen2_arr  (FILE** in, FILE** out,  const char* program, const char* argv[], const char* envp[])
+int popen2_arr  (FILE** in, FILE** out,  const char* program, const char* const argv[], const char* const envp[])
 {
     signal(SIGPIPE, SIG_IGN);
     return popen2_impl(in, out, program, argv, envp, 0);
 }
-int popen2_arr_p(FILE** in, FILE** out,  const char* program, const char* argv[], const char* envp[])
+int popen2_arr_p(FILE** in, FILE** out,  const char* program, const char* const argv[], const char* const envp[])
 {
     signal(SIGPIPE, SIG_IGN);
     return popen2_impl(in, out, program, argv, envp, 1);
 }
-FILE* popen_arr(const char* program, const char* argv[], int pipe_into_program) {
+FILE* popen_arr(const char* program, const char* const argv[], int pipe_into_program) {
     FILE* f = NULL;
     if (pipe_into_program) {
         popen2_arr_p(&f, NULL, program, argv, NULL);
