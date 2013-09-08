@@ -8,6 +8,7 @@ struct FILE;
  * For and exec the program, enabling stdio access to stdin and stdout of the program
  * You may close opened streams with fclose.
  * Note: the procedure does no signal handling except of signal(SIGPIPE, SIG_IGN);
+ * You should waitpid for the returned PID to collect the zombie or use signal(SIGCHLD, SIG_IGN);
  * 
  * @arg in  stdin of the program, to be written to. If NULL then not redirected
  * @arg out stdout of the program, to be read from. If NULL then not redirected
@@ -25,6 +26,7 @@ int popen2_arr_p(FILE** in, FILE** out,  const char* program, const char* argv[]
  * Simplified interface to popen2_arr.
  * You may close the returned stream with fclose.
  * Note: the procedure does no signal handling except of signal(SIGPIPE, SIG_IGN);
+ * You should wait(2) after closing the descriptor to collect zombie process or use signal(SIGCHLD, SIG_IGN)
  * 
  * @arg program program name, can rely on $PATH
  * @arg argv program arguments, NULL-terminated const char* array

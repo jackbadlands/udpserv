@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <time.h>
 
 
 
@@ -94,6 +95,8 @@ int main(int argc, char* argv[]) {
     }
     if (bind(s_recv, recv_addr->ai_addr, recv_addr->ai_addrlen)) {  perror("bind");  return 5;  }
     
+    signal(SIGCHLD, SIG_IGN); // A charm agains zombies
+    
     for (;;) {
         int ret = recvfrom(s_recv, buf, sizeof buf, 0, send_addr->ai_addr, &send_addr->ai_addrlen);
         if (ret >= 0) {
@@ -109,8 +112,21 @@ int main(int argc, char* argv[]) {
                     fclose(out);
                 }
                 sendto(s_recv, buf, ret, 0,  send_addr->ai_addr,  send_addr->ai_addrlen);
+                _exit(0);
             }
         }
-        usleep(usleep_interval);
+        
+        {
+            int ret;
+            struct timespec req = {usleep_interval/1000000,(usleep_interval%1000000)*1000}, rem;
+            for(;;) {
+                ret = nanosleep(&req, &rem);
+                if (ret == -1 && (errno == EINTR || errno==EAGAIN)) {
+                    req = rem;
+                    continue;
+                }
+                break;
+            }
+        }
     }
 }
