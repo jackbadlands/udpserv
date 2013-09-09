@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# For use with udpserv or similar thing
+
+# reads request id from stdin and outputs encrypted mosh connection data
+
+# the script designed to be called multiple times in a row for the same request id, so it caches the data
+
+
+GPG_CHECKSIG_WITH=0x09EA92A2DB6D6082
+GPG_ENCRYPT_WITH=0x09EA92A2DB6D6082
+
+true ${DIR:="/tmp/mosh-server-script"}
+
+mkdir -p "$DIR"
+chmod 700 "$DIR"
+
+gpg --keyid-format=0xlong > "$DIR"/request 2> "$DIR"/request.info
+if [ "$?" != "0" ]; then
+    echo Signature check failed
+    exit 1
+fi
+
+if grep -q "key $GPG_CHECKSIG_WITH" "$DIR"/request.info; then
+    :;
+else
+    echo Signed with wrong key
+    exit 1
+fi
+
+if grep -q "gpg: Good signature from" "$DIR"/request.info; then
+    :;
+else
+    echo "Not a good signature"
+    exit 1
+fi
+
+SID=$(<"$DIR"/request)
+
+#echo "Request ID is $SID"
+
+# sanitize input
+#SID = `echo $SID | sed 's!\([0-9a-zA-Z_]*\).*!\1!'`
+
+touch "$DIR"/savedsessnum
+SAVEDSESS=$(<"$DIR"/savedsessnum)
+
+if [[ "$SAVEDSESS" = "$SID" ]]; then
+    cat "$DIR"/savedreply
+    exit 0;
+fi
+
+# FAIL: https://github.com/keithw/mosh/issues/459
+mosh-server 2> /dev/null | gpg -u "$GPG_ENCRYPT_WITH" -s -r "$GPG_ENCRYPT_WITH" -e > "$DIR"/savedreply
+
+echo "$SID" > "$DIR"/savedsessnum
+
+cat "$DIR"/savedreply
