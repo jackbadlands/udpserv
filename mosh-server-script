@@ -7,8 +7,17 @@
 # the script designed to be called multiple times in a row for the same request id, so it caches the data
 
 
-GPG_CHECKSIG_WITH=0x09EA92A2DB6D6082
-GPG_ENCRYPT_WITH=0x09EA92A2DB6D6082
+GPG_CHECKSIG_WITH="$1"
+GPG_ENCRYPT_WITH="$2"
+
+if [ -z "$GPG_ENCRYPT_WITH" ]; then
+    echo "Usage: udpserv 250000 0.0.0.0 2222 ./mosh-server-script 0xGPG_client_keyid 0xGPG_server_keyid"
+    exit 1
+fi
+
+
+#GPG_CHECKSIG_WITH=0x09EA92A2DB6D6082
+#GPG_ENCRYPT_WITH=0x09EA92A2DB6D6082
 
 true ${DIR:="/tmp/mosh-server-script"}
 
