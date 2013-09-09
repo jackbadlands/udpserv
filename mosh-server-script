@@ -50,8 +50,14 @@ if [[ "$SAVEDSESS" = "$SID" ]]; then
     exit 0;
 fi
 
-# FAIL: https://github.com/keithw/mosh/issues/459
-mosh-server 2> /dev/null | gpg -u "$GPG_ENCRYPT_WITH" -s -r "$GPG_ENCRYPT_WITH" -e > "$DIR"/savedreply
+set -o pipefail
+
+mosh-server | gpg -u "$GPG_ENCRYPT_WITH" -s -r "$GPG_ENCRYPT_WITH" -e > "$DIR"/savedreply
+
+if [ "$?" != "0" ]; then
+    echo "Failed to start mosh-server. Only new enough (with commit 45bba44, > 1.2.4) can be used with this script"
+    exit 1
+fi
 
 echo "$SID" > "$DIR"/savedsessnum
 
