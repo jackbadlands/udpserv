@@ -92,3 +92,7 @@ Only new enough (with commit 45bba44, > 1.2.4) mosh-server can probably be used 
 ```
 
 Uses `auth-and-execute-client` to set up [mosh](https://github.com/keithw/mosh) session.
+
+If auth-and-execute was started from background, without terminal, you need mosh-1.2.4-17-g[45bba44](https://github.com/keithw/mosh/commit/45bba44c83d0b5f6da32327bbcbd2a42d22adbb2) 
+or higher from [mosh.git](https://github.com/keithw/mosh/commit/45bba44c83d0b5f6da32327bbcbd2a42d22adbb2), 
+or 1.2.4a-0~948 or higher from the [mosh-dev Ubuntu PPA](https://launchpad.net/%7Ekeithw/+archive/mosh-dev).
