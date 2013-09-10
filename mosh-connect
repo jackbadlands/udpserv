@@ -1,0 +1,42 @@
+ #!/bin/bash
+
+# Establish connection to mosh using auth-and-execute instead of SSH
+
+AEX=./auth-and-execute-client
+if [ ! -x "$AEX" ]; then
+    if which auth-and-execute-client; then
+        AEX=auth-and-execute-client
+    else
+        echo "auth-and-execute-client is not available"
+        exit 1
+    fi
+fi
+
+
+GPG_USER="$1"
+GPG_SERVER="$2"
+HOST="$3"
+PORT="$4"
+shift;shift;shift;shift;
+MOSHSERVER="$*"
+
+if [ -z "$MOSHSERVER" ]; then MOSHSERVER=mosh-server; fi
+
+if [ -z "$PORT" ]; then
+    echo "Usage: mosh-connect gpg_user_key gpg_server_key host port [mosh-server command line]"
+    echo "Example: mosh-connect 0x09EA92A2DB6D6082 0x09EA92A2DB6D6082 1.2.3.4 2222 LANG=en_US.UTF-8 /root/bin/mosh-server"
+    echo "Only new enough (with commit 45bba44, > 1.2.4) mosh-server can probably be used with this script"
+    exit 1
+fi
+
+REPLY=`$AEX "$GPG_USER" "$GPG_SERVER" "$HOST" "$PORT" "$MOSHSERVER"`
+
+if grep -q 'MOSH CONNECT ' <<< "$REPLY"; then
+    read _1 _2 PORT2 MOSH_KEY <<< $(grep MOSH\ CONNECT <<< "$REPLY")
+    export MOSH_KEY
+    exec mosh-client "$HOST" "$PORT2"
+else
+    echo Malformed reply
+    echo "$REPLY"
+    exit 1
+fi

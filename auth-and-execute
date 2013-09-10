@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# For use with udpserv or similar things
+
+# reads PGP encrypted and signed command, verifies it, executes, encrypts the command reply and sends it back to client
+# Use case: executing commands on remote server under DoS (when packet loss is about 80-90% and can't SSH into it)
+
+# maximum input and output is limited by UDP packet size (keep in mind big GPG overhead)
+# commands should not take long time to be executed
+
+# note that there is no protection against "replay" attacks (except for short term retransmission filter, unsecure)
+#   - commands may be executed again by somebody
+# use something like
+#     echo "if [ \`date +%s\` -gt $((`date +%s`+600)) ]; then echo Replay; exit 1; fi"
+# in your client script to protect from delayed replays
+
+# also note that each request leaves result file which is not automatically cleaned
+
+
+# send command using (example):
+# echo 'some commands' | gpg2 -u 0x09EA92A2DB6D6082 -s |  ./udpclient 10 200000   1.2.3.4 2222 | gpg2 2> /dev/null
+# or using special supplied script
+
+GPG_CLIENT_ID="$1"
+GPG_SERVER_ID="$2"
+shift; shift
+# using rest of command line arguments as shell command
+
+if [ -z "$1" ]; then
+    echo "Usage: ./udpserv interval liten_address port ./auth-and-execute 0xGPG_client_keyid 0xGPG_server_keyid shell command line"
+    echo "Server GPG key should be available without passphrase"
+    echo "Example: ./udpserv 200000 0.0.0.0 2222 ./auth-and-execute 0x09EA92A2DB6D6082 0x09EA92A2DB6D6082 /bin/bash"
+    exit 1
+fi
+
+true ${DIR:="$HOME/tmp/auth-and-execute"}
+mkdir -p --mode=0700 "$DIR"
+
+{
+if flock -w 0.5  33 ; then
+    :;
+else
+    echo "Server busy"
+    exit 1
+fi
+
+rm -f "$DIR"/request.gpg "$DIR"/request "$DIR"/request.info
+
+cat > "$DIR"/request.gpg
+
+read SUM _1 <<< `sha1sum < "$DIR"/request.gpg`
+
+if [ -e "$DIR/$SUM" ]; then
+    cat "$DIR/$SUM";
+    exit 0;
+fi
+
+
+gpg --keyid-format=0xlong < "$DIR"/request.gpg > "$DIR"/request 2> "$DIR"/request.info
+if [ "$?" != "0" ]; then
+    echo ERROR Signature check failed | tee "$DIR/$SUM"
+    exit 1
+fi
+
+if grep -q "key $GPG_CLIENT_ID" "$DIR"/request.info; then
+    :;
+else
+    echo ERROR Signed with wrong key | tee "$DIR/$SUM"
+    exit 1
+fi
+
+if grep -q "gpg: Good signature from" "$DIR"/request.info; then
+    :;
+else
+    echo ERROR Not a good signature | tee "$DIR/$SUM"
+    exit 1
+fi
+
+"$@" < "$DIR"/request 2>&1 | gpg --trust-model=always -u "$GPG_SERVER_ID" -s -r "$GPG_CLIENT_ID" -e > "$DIR"/"$SUM"
+
+cat "$DIR/$SUM";
+
+} 33> "$DIR"/globallock

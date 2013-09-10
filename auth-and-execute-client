@@ -1,0 +1,67 @@
+#!/bin/bash
+
+
+GPG_USER="$1"
+GPG_SERVER="$2"
+HOST="$3"
+PORT="$4"
+
+shift;shift;shift;shift
+
+true ${REPLAY_TIMEOUT:="600"}
+
+if [ -z "$1" ]; then
+    echo "Usage: ./auth-and-execute-client gpg_user_key gpg_server_key host port     command"
+    echo "Example: ./auth-and-execute-client 0x09EA92A2DB6D6082 0x09EA92A2DB6D6082 1.2.3.4 2222   ping -c 5 -i 0.2 8.8.8.8"
+    exit 1
+fi
+set -o pipefail
+
+UDPCLIENT=./udpclient
+if [ ! -x "$UDPCLIENT" ]; then
+    if which udpclient; then
+        UDPCLIENT=udpclient
+    else
+        echo "\"udpclient\" program is not available"
+        exit 1
+    fi
+fi
+
+T=`mktemp -d`
+
+trap 'rm -f "$T/reply" "$T/reply.info" "$T/reply.gpg"; rmdir "$T"' EXIT
+
+{ 
+    echo "if [ \`date +%s\` -gt $((`date +%s`+REPLAY_TIMEOUT)) ]; then echo Replay; exit 1; fi"
+    echo "$*" 
+} | 
+    gpg -u "$GPG_USER" -s -r "$GPG_SERVER" -e | 
+    $UDPCLIENT 120 500000  "$HOST" "$PORT" > "$T"/reply.gpg && 
+    gpg --keyid-format=0xlong < "$T"/reply.gpg > "$T"/reply 2> "$T"/reply.info
+
+if [ "$?" != "0" ]; then
+    echo "Something failed, see $T/reply.gpg.rejected"
+    cp "$T"/reply.gpg "$T"/reply.gpg.rejected;
+    exit 1
+fi
+
+
+if grep -q "key $GPG_CHECKSIG_WITH" "$T"/reply.info; then
+    :;
+else
+    echo "Reply signed with wrong key"
+    cp "$T"/reply.info "$T"/reply.info.rejected;  cp "$T"/reply "$T"/reply.rejected
+    echo "See $T/reply.info.rejected and $T/reply.rejected"
+    exit 1
+fi
+
+if grep -q "gpg: Good signature from" "$T"/reply.info; then
+    :;
+else
+    echo "Not a good signature"
+    cp "$T"/reply.info "$T"/reply.info.rejected;  cp "$T"/reply "$T"/reply.rejected
+    echo "See $T/reply.info.rejected and $T/reply.rejected"
+    exit 1
+fi
+
+cat "$T"/reply
