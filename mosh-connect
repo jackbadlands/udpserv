@@ -2,6 +2,8 @@
 
 # Establish connection to mosh using auth-and-execute instead of SSH
 
+# License=MIT Vitaly Shukela 2013
+
 AEX=./auth-and-execute-client
 if [ ! -x "$AEX" ]; then
     if which auth-and-execute-client; then

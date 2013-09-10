@@ -21,6 +21,9 @@
 # echo 'some commands' | gpg2 -u 0x09EA92A2DB6D6082 -s |  ./udpclient 10 200000   1.2.3.4 2222 | gpg2 2> /dev/null
 # or using special supplied script
 
+
+# License=MIT Vitaly Shukela 2013
+
 GPG_CLIENT_ID="$1"
 GPG_SERVER_ID="$2"
 shift; shift

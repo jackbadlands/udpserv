@@ -57,7 +57,8 @@ int main(int argc, char* argv[]) {
         "Example:\n"
         "\tudpserv 25000 0.0.0.0 6767 sh -c 'read I; ifconfig \"$I\"' \n"
         "\techo eth0 | nc -u 127.0.0.1 5555 -q 1\n"
-        "\tPATH=/..../mosh.git/src/frontend:$PATH ./udpserv 250000 0.0.0.0 2222 ./mosh-server-script 0x09EA92A2DB6D6082 0x09EA92A2DB6D6082\n"
+        "\n"
+        "\t./udpserv 200000 0.0.0.0 2222 ./auth-and-execute 0x09EA92A2DB6D6082 0x09EA92A2DB6D6082 /bin/bash\n"
         ,BUFSIZE);
         return 1;
     }

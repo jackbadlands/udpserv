@@ -8,6 +8,8 @@ PORT="$4"
 
 shift;shift;shift;shift
 
+# License=MIT Vitaly Shukela 2013
+
 true ${REPLAY_TIMEOUT:="600"}
 
 if [ -z "$1" ]; then
