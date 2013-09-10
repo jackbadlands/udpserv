@@ -5,7 +5,7 @@ struct FILE;
 // Implemented by Vitaly _Vi Shukela in 2013, License=MIT
 
 /**
- * For and exec the program, enabling stdio access to stdin and stdout of the program
+ * Fork and exec the program, enabling stdio access to stdin and stdout of the program
  * You may close opened streams with fclose.
  * Note: the procedure does no signal handling except of signal(SIGPIPE, SIG_IGN);
  * You should waitpid for the returned PID to collect the zombie or use signal(SIGCHLD, SIG_IGN);
